@@ -6,7 +6,6 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
@@ -22,9 +21,6 @@ func New(ctx context.Context, bucket string) (ClientInterface, error) {
 	if err != nil {
 		return nil, Error(err, "Failed to create GCS storage client")
 	}
-
-	// If bucket name starts with "gs://" protocol, trim it
-	bucket = strings.TrimPrefix(bucket, "gs://")
 
 	return &Client{
 		c:      client,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	cli "github.com/urfave/cli/v2"
 	"github.com/ysugimoto/gcsdeploy/local"
@@ -65,7 +66,8 @@ func action(c *cli.Context) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	bucket := c.String(flagNameBucket)
+	// If bucket name starts with "gs://" protocol, trim it
+	bucket := strings.TrimPrefix(c.String(flagNameBucket), "gs://")
 	localPath := c.String(flagNameLocalPath)
 	concurrency := c.Int(flagNameConcurrency)
 
@@ -90,39 +92,46 @@ func action(c *cli.Context) error {
 		return err
 	}
 
-	// If --dry-run flas is provided, print operation detail
+	// If --dry-run flag is provided, print operation detail
 	if c.Bool(flagNameDryRun) {
-		// printOperations(ops)
+		printDryRunOperations(ops, bucket)
 		return nil
 	}
 
 	// Execute operations for each concurrency
 	for _, task := range divideOperationsByConcurrency(ops, concurrency) {
-		var eg errgroup.Group
-		for i := range task {
-			eg.Go(func() error {
-				var err error
-				switch task[i].Type {
-				case operation.Add:
-					err = r.UploadObject(ctx, task[i].Local, task[i].Remote)
-				case operation.Update:
-					err = r.UploadObject(ctx, task[i].Local, task[i].Remote)
-				case operation.Delete:
-					err = r.DeleteObject(ctx, task[i].Remote)
-				}
-				return err
-			})
-			if err := eg.Wait(); err != nil {
-				return err
-			}
+		if err := runTask(task, bucket); err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func divideOperationsByConcurrency(ops operation.Operations, concurrency int) []operation.Operations {
-	tasks := []operation.Operations{}
+func runTask(tasks operation.Operations, bucket string) error {
+	var eg errgroup.Group
+	for i := range tasks {
+		task := tasks[i] // trap variable in this scope
+		eg.Go(func() error {
+			var err error
+			switch task.Type {
+			case operation.Add:
+				printAddOperation(task, bucket)
+				// err = r.UploadObject(ctx, task[i].Local, task[i].Remote)
+			case operation.Update:
+				printUpdateOperation(task, bucket)
+				// err = r.UploadObject(ctx, task[i].Local, task[i].Remote)
+			case operation.Delete:
+				printDeleteOperation(task, bucket)
+				// err = r.DeleteObject(ctx, task[i].Remote)
+			}
+			return err
+		})
+	}
+	return eg.Wait()
+}
+
+func divideOperationsByConcurrency(ops operation.Operations, concurrency int) (tasks []operation.Operations) {
 	var task operation.Operations
 	for i := range ops {
 		task = append(task, ops[i])
@@ -134,5 +143,5 @@ func divideOperationsByConcurrency(ops operation.Operations, concurrency int) []
 	if len(task) > 0 {
 		tasks = append(tasks, task)
 	}
-	return tasks
+	return
 }
