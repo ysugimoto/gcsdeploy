@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	flagNameDryRun      = "dry-run"
-	flagNameBucket      = "bucket"
-	flagNameLocalPath   = "local"
-	flagNameConcurrency = "concurrency"
+	flagNameDryRun          = "dry-run"
+	flagNameBucket          = "bucket"
+	flagNameLocalPath       = "local"
+	flagNameConcurrency     = "concurrency"
+	flagNameCrendentialPath = "credential"
 )
 
 func main() {
@@ -34,6 +35,12 @@ func main() {
 				Aliases:  []string{"b"},
 				Usage:    "Specify deploy destination bucket",
 				Required: true,
+				Action: func(ctx *cli.Context, v string) error {
+					if _, err := remote.ParseBucket(v); err != nil {
+						return fmt.Errorf("Invalid bucket provided: %s", v)
+					}
+					return nil
+				},
 			},
 			&cli.StringFlag{
 				Name:     flagNameLocalPath,
@@ -41,9 +48,14 @@ func main() {
 				Usage:    "Specify local root directory to deploy",
 				Required: true,
 			},
+			&cli.StringFlag{
+				Name:    flagNameCrendentialPath,
+				Aliases: []string{"c"},
+				Usage:   "Specify credential file path",
+			},
 			&cli.IntFlag{
 				Name:    flagNameConcurrency,
-				Aliases: []string{"c"},
+				Aliases: []string{"p"},
 				Usage:   "Specify operation concurrency",
 				Value:   1,
 				Action: func(ctx *cli.Context, v int) error {
@@ -66,12 +78,19 @@ func action(c *cli.Context) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// If bucket name starts with "gs://" protocol, trim it
-	bucket := strings.TrimPrefix(c.String(flagNameBucket), "gs://")
+	// We don't need error check because validation has already done in CLI flag parsing
+	bucket, _ := remote.ParseBucket(c.String(flagNameBucket)) // nolint:errcheck
 	localPath := c.String(flagNameLocalPath)
+	credential := c.String(flagNameCrendentialPath)
 	concurrency := c.Int(flagNameConcurrency)
 
-	r, err := remote.New(ctx, bucket)
+	var r remote.ClientInterface
+	var err error
+	if credential == "" {
+		r, err = remote.New(ctx, bucket)
+	} else {
+		r, err = remote.NewWithCredential(ctx, bucket, credential)
+	}
 	if err != nil {
 		return err
 	}
@@ -99,16 +118,21 @@ func action(c *cli.Context) error {
 	}
 
 	// Execute operations for each concurrency
+	var messages []string
 	for _, task := range divideOperationsByConcurrency(ops, concurrency) {
 		if err := runTask(task, bucket); err != nil {
-			return err
+			messages = append(messages, err.Error())
 		}
+	}
+
+	if len(messages) > 0 {
+		return fmt.Errorf("%s", strings.Join(messages, "\n"))
 	}
 
 	return nil
 }
 
-func runTask(tasks operation.Operations, bucket string) error {
+func runTask(tasks operation.Operations, bucket *remote.Bucket) error {
 	var eg errgroup.Group
 	for i := range tasks {
 		task := tasks[i] // trap variable in this scope

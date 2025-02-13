@@ -46,15 +46,32 @@ func TestListObjects(t *testing.T) {
 	}{
 		{
 			name: "Return expected files",
-			root: "../examples/same",
-			expects: &Object{
-				Root: root + "/",
-				Items: map[string]Checksum{
-					"index.html":                nil,
-					"vite.svg":                  nil,
-					"assets/index-n_ryQ3BS.css": nil,
-					"assets/index-pGAOdsKC.js":  nil,
-					"assets/react-CHdo91hT.svg": nil,
+			root: root,
+			expects: Objects{
+				"index.html": {
+					FullPath:    filepath.Join(root, "index.html"),
+					ContentType: "text/html",
+					Size:        464,
+				},
+				"vite.svg": {
+					FullPath:    filepath.Join(root, "vite.svg"),
+					ContentType: "image/svg+xml",
+					Size:        1497,
+				},
+				"assets/index-n_ryQ3BS.css": {
+					FullPath:    filepath.Join(root, "assets/index-n_ryQ3BS.css"),
+					ContentType: "text/css",
+					Size:        1391,
+				},
+				"assets/index-pGAOdsKC.js": {
+					FullPath:    filepath.Join(root, "assets/index-pGAOdsKC.js"),
+					ContentType: "text/javascript",
+					Size:        143899,
+				},
+				"assets/react-CHdo91hT.svg": {
+					FullPath:    filepath.Join(root, "assets/react-CHdo91hT.svg"),
+					ContentType: "image/svg+xml",
+					Size:        4126,
 				},
 			},
 		},

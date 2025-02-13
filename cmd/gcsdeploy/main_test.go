@@ -1,13 +1,17 @@
 package main
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ysugimoto/gcsdeploy/local"
 	"github.com/ysugimoto/gcsdeploy/operation"
+	"github.com/ysugimoto/gcsdeploy/remote"
 )
 
 func TestDivideOperationByConcurrency(t *testing.T) {
+	root, _ := filepath.Abs("../../examples/same")
 	tests := []struct {
 		name        string
 		concurrency int
@@ -18,15 +22,47 @@ func TestDivideOperationByConcurrency(t *testing.T) {
 			name:        "Concurrency 1",
 			concurrency: 1,
 			operations: operation.Operations{
-				{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-				{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
+				{
+					Type: operation.Add,
+					Local: local.Object{
+						FullPath: filepath.Join(root, "index.html"),
+					},
+					Remote: remote.Object{
+						Key: "index.html",
+					},
+				},
+				{
+					Type: operation.Add,
+					Local: local.Object{
+						FullPath: filepath.Join(root, "index.html"),
+					},
+					Remote: remote.Object{
+						Key: "index.html",
+					},
+				},
 			},
 			expects: []operation.Operations{
 				{
-					{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
+					{
+						Type: operation.Add,
+						Local: local.Object{
+							FullPath: filepath.Join(root, "index.html"),
+						},
+						Remote: remote.Object{
+							Key: "index.html",
+						},
+					},
 				},
 				{
-					{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
+					{
+						Type: operation.Add,
+						Local: local.Object{
+							FullPath: filepath.Join(root, "index.html"),
+						},
+						Remote: remote.Object{
+							Key: "index.html",
+						},
+					},
 				},
 			},
 		},
@@ -34,29 +70,157 @@ func TestDivideOperationByConcurrency(t *testing.T) {
 			name:        "Concurrency 3",
 			concurrency: 3,
 			operations: operation.Operations{
-				{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-				{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-				{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-				{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-				{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-				{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-				{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-				{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
+				{
+					Type: operation.Add,
+					Local: local.Object{
+						FullPath: filepath.Join(root, "index.html"),
+					},
+					Remote: remote.Object{
+						Key: "index.html",
+					},
+				},
+				{
+					Type: operation.Add,
+					Local: local.Object{
+						FullPath: filepath.Join(root, "index.html"),
+					},
+					Remote: remote.Object{
+						Key: "index.html",
+					},
+				},
+				{
+					Type: operation.Add,
+					Local: local.Object{
+						FullPath: filepath.Join(root, "index.html"),
+					},
+					Remote: remote.Object{
+						Key: "index.html",
+					},
+				},
+				{
+					Type: operation.Add,
+					Local: local.Object{
+						FullPath: filepath.Join(root, "index.html"),
+					},
+					Remote: remote.Object{
+						Key: "index.html",
+					},
+				},
+				{
+					Type: operation.Add,
+					Local: local.Object{
+						FullPath: filepath.Join(root, "index.html"),
+					},
+					Remote: remote.Object{
+						Key: "index.html",
+					},
+				},
+				{
+					Type: operation.Add,
+					Local: local.Object{
+						FullPath: filepath.Join(root, "index.html"),
+					},
+					Remote: remote.Object{
+						Key: "index.html",
+					},
+				},
+				{
+					Type: operation.Add,
+					Local: local.Object{
+						FullPath: filepath.Join(root, "index.html"),
+					},
+					Remote: remote.Object{
+						Key: "index.html",
+					},
+				},
+				{
+					Type: operation.Add,
+					Local: local.Object{
+						FullPath: filepath.Join(root, "index.html"),
+					},
+					Remote: remote.Object{
+						Key: "index.html",
+					},
+				},
 			},
 			expects: []operation.Operations{
 				{
-					{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-					{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-					{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
+					{
+						Type: operation.Add,
+						Local: local.Object{
+							FullPath: filepath.Join(root, "index.html"),
+						},
+						Remote: remote.Object{
+							Key: "index.html",
+						},
+					},
+					{
+						Type: operation.Add,
+						Local: local.Object{
+							FullPath: filepath.Join(root, "index.html"),
+						},
+						Remote: remote.Object{
+							Key: "index.html",
+						},
+					},
+					{
+						Type: operation.Add,
+						Local: local.Object{
+							FullPath: filepath.Join(root, "index.html"),
+						},
+						Remote: remote.Object{
+							Key: "index.html",
+						},
+					},
 				},
 				{
-					{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-					{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-					{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
+					{
+						Type: operation.Add,
+						Local: local.Object{
+							FullPath: filepath.Join(root, "index.html"),
+						},
+						Remote: remote.Object{
+							Key: "index.html",
+						},
+					},
+					{
+						Type: operation.Add,
+						Local: local.Object{
+							FullPath: filepath.Join(root, "index.html"),
+						},
+						Remote: remote.Object{
+							Key: "index.html",
+						},
+					},
+					{
+						Type: operation.Add,
+						Local: local.Object{
+							FullPath: filepath.Join(root, "index.html"),
+						},
+						Remote: remote.Object{
+							Key: "index.html",
+						},
+					},
 				},
 				{
-					{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
-					{Type: operation.Add, Local: "../../examples/same/index.html", Remote: "index.html"},
+					{
+						Type: operation.Add,
+						Local: local.Object{
+							FullPath: filepath.Join(root, "index.html"),
+						},
+						Remote: remote.Object{
+							Key: "index.html",
+						},
+					},
+					{
+						Type: operation.Add,
+						Local: local.Object{
+							FullPath: filepath.Join(root, "index.html"),
+						},
+						Remote: remote.Object{
+							Key: "index.html",
+						},
+					},
 				},
 			},
 		},

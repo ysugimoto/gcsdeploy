@@ -6,6 +6,9 @@ import (
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
 	"github.com/ysugimoto/gcsdeploy/operation"
+	"github.com/ysugimoto/gcsdeploy/remote"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 var (
@@ -24,7 +27,11 @@ func writeln(c *color.Color, format string, args ...interface{}) {
 	write(c, format+"\n", args...)
 }
 
-func printDryRunOperations(ops operation.Operations, bucket string) {
+func numberFormat(v int64) string {
+	return message.NewPrinter(language.English).Sprintf("%d", v)
+}
+
+func printDryRunOperations(ops operation.Operations, bucket *remote.Bucket) {
 	var add, update, del operation.Operations
 	for i := range ops {
 		switch ops[i].Type {
@@ -36,36 +43,84 @@ func printDryRunOperations(ops operation.Operations, bucket string) {
 			del = append(del, ops[i])
 		}
 	}
-	writeln(white, "================================ %s ================================", "Dry-Run Result")
+	writeln(white, "[Dry-Run]")
 	if len(add) > 0 {
 		writeln(green, "%s", "Add Files:")
-		for i := range add {
-			writeln(white, "%2s- %s -> gs://%s/%s", " ", add[i].Local, bucket, add[i].Remote)
+		for _, a := range add {
+			writeln(
+				white,
+				"- %s -> %s/%s (%s %s bytes)",
+				a.Local.FullPath,
+				bucket.String(),
+				a.Remote.Key,
+				a.Local.ContentType,
+				numberFormat(a.Local.Size),
+			)
 		}
 	}
 	if len(update) > 0 {
 		writeln(yellow, "%s", "Update Files:")
-		for i := range update {
-			writeln(white, "%2s- %s -> gs://%s/%s", " ", update[i].Local, bucket, update[i].Remote)
+		for _, u := range update {
+			writeln(
+				white,
+				"- %s -> %s/%s (%s %s bytes)",
+				u.Local.FullPath,
+				bucket.String(),
+				u.Remote.Key,
+				u.Local.ContentType,
+				numberFormat(u.Local.Size),
+			)
 		}
 	}
 	if len(del) > 0 {
-		writeln(white, "%s", "Delete Files:")
-		for i := range del {
-			writeln(red, "%2s- %s -> gs://%s/%s", " ", del[i].Local, bucket, del[i].Remote)
+		writeln(red, "%s", "Delete Files:")
+		for _, d := range del {
+			writeln(
+				white,
+				"- %s/%s (%s %s bytes)",
+				bucket.String(),
+				d.Remote.Key,
+				d.Remote.ContentType,
+				numberFormat(d.Remote.Size),
+			)
 		}
 	}
-	writeln(white, "================================================================================")
 }
 
-func printAddOperation(op operation.Operation, bucket string) {
-	writeln(white, "%8s: %s -> gs://%s/%s ...", "Adding", op.Local, bucket, op.Remote)
+func printAddOperation(op operation.Operation, bucket *remote.Bucket) {
+	writeln(
+		white,
+		"%8s: %s -> %s/%s (%s %s bytes)",
+		"Adding",
+		op.Local.FullPath,
+		bucket.String(),
+		op.Remote.Key,
+		op.Local.ContentType,
+		numberFormat(op.Local.Size),
+	)
 }
 
-func printUpdateOperation(op operation.Operation, bucket string) {
-	writeln(white, "%8s: %s -> gs://%s/%s ...", "Updating", op.Local, bucket, op.Remote)
+func printUpdateOperation(op operation.Operation, bucket *remote.Bucket) {
+	writeln(
+		white,
+		"%8s: %s -> %s/%s (%s %s bytes)",
+		"Updating",
+		op.Local.FullPath,
+		bucket.String(),
+		op.Remote.Key,
+		op.Local.ContentType,
+		numberFormat(op.Local.Size),
+	)
 }
 
-func printDeleteOperation(op operation.Operation, bucket string) {
-	writeln(white, "%8s gs://%s/%s ...", "Deleting", bucket, op.Remote)
+func printDeleteOperation(op operation.Operation, bucket *remote.Bucket) {
+	writeln(
+		white,
+		"%8s: %s/%s (%s %s bytes)",
+		"Deleting",
+		bucket.String(),
+		op.Remote.Key,
+		op.Remote.ContentType,
+		numberFormat(op.Remote.Size),
+	)
 }

@@ -2,6 +2,7 @@ package local
 
 import (
 	"io/fs"
+	"mime"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,11 +25,8 @@ func New(root string) (ClientInterface, error) {
 	}, nil
 }
 
-func (client *Client) ListObjects() (*Object, error) {
-	o := &Object{
-		Root:  client.root,
-		Items: make(map[string]Checksum),
-	}
+func (client *Client) ListObjects() (Objects, error) {
+	o := Objects{}
 
 	err := filepath.Walk(client.root, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -38,9 +36,19 @@ func (client *Client) ListObjects() (*Object, error) {
 		if info.IsDir() {
 			return nil
 		}
+		m := mime.TypeByExtension(filepath.Ext(path))
+		if idx := strings.Index(m, ";"); idx != -1 {
+			// Trim charset section
+			m = m[:idx]
+		}
 		// Add items, but we won't calculate checksum at this time.
 		// We should calculate checksum when we need to compare between remote and local for performance.
-		o.Items[strings.TrimPrefix(path, client.root)] = nil
+		o[strings.TrimPrefix(path, client.root)] = Object{
+			ContentType: m,
+			Size:        info.Size(),
+			FullPath:    path,
+		}
+
 		return nil
 	})
 	if err != nil {

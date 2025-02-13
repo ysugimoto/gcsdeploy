@@ -9,14 +9,15 @@ import (
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
 type Client struct {
 	c      *storage.Client
-	bucket string
+	bucket *Bucket
 }
 
-func New(ctx context.Context, bucket string) (ClientInterface, error) {
+func New(ctx context.Context, bucket *Bucket) (ClientInterface, error) {
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return nil, Error(err, "Failed to create GCS storage client")
@@ -28,15 +29,25 @@ func New(ctx context.Context, bucket string) (ClientInterface, error) {
 	}, nil
 }
 
-func (client *Client) ListObjects(ctx context.Context) (*Object, error) {
-	iter := client.c.Bucket(client.bucket).Objects(ctx, &storage.Query{
+func NewWithCredential(ctx context.Context, bucket *Bucket, creds string) (ClientInterface, error) {
+	client, err := storage.NewClient(ctx, option.WithCredentialsFile(creds))
+	if err != nil {
+		return nil, Error(err, "Failed to create GCS storage client")
+	}
+
+	return &Client{
+		c:      client,
+		bucket: bucket,
+	}, nil
+}
+
+func (client *Client) ListObjects(ctx context.Context) (Objects, error) {
+	iter := client.c.Bucket(client.bucket.Name).Objects(ctx, &storage.Query{
 		Versions:   false,
 		Projection: storage.ProjectionNoACL,
+		Prefix:     client.bucket.Prefix,
 	})
-	o := &Object{
-		Bucket: client.bucket,
-		Items:  make(map[string]Checksum),
-	}
+	o := Objects{}
 
 	for {
 		v, err := iter.Next()
@@ -46,7 +57,13 @@ func (client *Client) ListObjects(ctx context.Context) (*Object, error) {
 		if err != nil {
 			return nil, Error(err, "Failed to iterate object")
 		}
-		o.Items[v.Name] = v.MD5
+		o[v.Name] = Object{
+			Key:         v.Name,
+			Bucket:      client.bucket,
+			Checksum:    v.MD5,
+			Size:        v.Size,
+			ContentType: v.ContentType,
+		}
 	}
 
 	return o, nil
@@ -59,7 +76,7 @@ func (client *Client) UploadObject(ctx context.Context, from, to string) error {
 	}
 	defer fp.Close()
 
-	w := client.c.Bucket(client.bucket).Object(to).NewWriter(ctx)
+	w := client.c.Bucket(client.bucket.Name).Object(to).NewWriter(ctx)
 	m, err := mime.ExtensionsByType(filepath.Ext(from))
 	if err == nil && m != nil {
 		w.ContentType = m[0]
@@ -71,7 +88,7 @@ func (client *Client) UploadObject(ctx context.Context, from, to string) error {
 }
 
 func (client *Client) DeleteObject(ctx context.Context, from string) error {
-	if err := client.c.Bucket(client.bucket).Object(from).Delete(ctx); err != nil {
+	if err := client.c.Bucket(client.bucket.Name).Object(from).Delete(ctx); err != nil {
 		return Error(err, "Failed to delete object "+from)
 	}
 	return nil

@@ -1,5 +1,10 @@
 package operation
 
+import (
+	"github.com/ysugimoto/gcsdeploy/local"
+	"github.com/ysugimoto/gcsdeploy/remote"
+)
+
 type OperationType int
 
 const (
@@ -23,8 +28,8 @@ func (o OperationType) String() string {
 
 type Operation struct {
 	Type   OperationType
-	Local  string
-	Remote string
+	Local  local.Object
+	Remote remote.Object
 }
 
 type Operations []Operation

@@ -1,5 +1,5 @@
 package local
 
 type ClientInterface interface {
-	ListObjects() (*Object, error)
+	ListObjects() (Objects, error)
 }

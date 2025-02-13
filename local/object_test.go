@@ -8,11 +8,11 @@ import (
 )
 
 func TestObjectCheckSumCalculation(t *testing.T) {
-	o := &Object{
-		Root: "../examples/same",
+	o := Object{
+		FullPath: "../examples/same/index.html",
 	}
 
-	cs, err := o.Checksum("index.html")
+	cs, err := o.Checksum()
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
 		return
