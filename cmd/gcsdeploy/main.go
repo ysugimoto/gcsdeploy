@@ -24,6 +24,7 @@ const (
 	flagNameConcurrency     = "concurrency"
 	flagNameCrendentialPath = "credential"
 	flagNameDelete          = "delete"
+	flagNameVersion         = "version"
 )
 
 func main() {
@@ -38,6 +39,11 @@ func main() {
 			&cli.BoolFlag{
 				Name:  flagNameDelete,
 				Usage: "Delete GCS object if not exists in local",
+			},
+			&cli.BoolFlag{
+				Name:    flagNameVersion,
+				Aliases: []string{"v"},
+				Usage:   "Print tool version",
 			},
 			&cli.StringFlag{
 				Name:     flagNameBucket,
@@ -87,6 +93,11 @@ func main() {
 func action(c *cli.Context) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	if c.Bool(flagNameVersion) {
+		fmt.Fprintln(os.Stdout, version)
+		return nil
+	}
 
 	// We don't need error check because validation has already done in CLI flag parsing
 	bucket, _ := remote.ParseBucket(c.String(flagNameBucket)) // nolint:errcheck

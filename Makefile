@@ -1,7 +1,7 @@
 .PHONY: test
 BUILD_VERSION=$(or ${VERSION}, dev)
 
-all: test lint
+build: test lint
 
 test:
 	go test ./...
@@ -33,4 +33,4 @@ darwin_arm64:
 			 -o dist/gcsdeploy-darwin-arm64 ./cmd/gcsdeploy
 	cd ./dist/ && cp ./gcsdeploy-darwin-arm64 ./gcsdeploy && tar cfz gcsdeploy-darwin-arm64.tar.gz ./gcsdeploy
 
-all: linux_amd64 linux_arm64 darwin_amd64 darwin_arm64
+release: linux_amd64 linux_arm64 darwin_amd64 darwin_arm64
