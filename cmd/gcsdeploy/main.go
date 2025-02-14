@@ -14,6 +14,8 @@ import (
 	"google.golang.org/api/option"
 )
 
+var version string = ""
+
 // Declare CLI command flag names
 const (
 	flagNameDryRun          = "dry-run"
