@@ -7,7 +7,9 @@ import (
 	"github.com/ysugimoto/gcsdeploy/remote"
 )
 
-func Make(ro remote.Objects, lo local.Objects) (Operations, error) {
+// Make creates operations that needs to run modification in GCS bucket (add, update, or delete).
+// Compare remote files and local files and judge what operation should do
+func Make(bucket *remote.Bucket, ro remote.Objects, lo local.Objects) (Operations, error) {
 	ops := Operations{}
 
 	// Make Add / Update operation
@@ -34,7 +36,8 @@ func Make(ro remote.Objects, lo local.Objects) (Operations, error) {
 			Type:  Add,
 			Local: obj,
 			Remote: remote.Object{
-				Key: key,
+				Key:    key,
+				Bucket: bucket,
 			},
 		})
 	}

@@ -26,6 +26,8 @@ func (o OperationType) String() string {
 	}
 }
 
+// Operation struct holds all informations to do the GCS.
+// Operation type, local object, and remote object.
 type Operation struct {
 	Type   OperationType
 	Local  local.Object

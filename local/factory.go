@@ -12,6 +12,7 @@ type Client struct {
 	root string
 }
 
+// Create *Client pointer that implements ClientInterface
 func New(root string) (ClientInterface, error) {
 	if _, err := os.Stat(root); err != nil {
 		return nil, Error(err, "Failed to stat root path of "+root)
@@ -25,6 +26,7 @@ func New(root string) (ClientInterface, error) {
 	}, nil
 }
 
+// Find local objects recursively
 func (client *Client) ListObjects() (Objects, error) {
 	o := Objects{}
 
@@ -32,7 +34,7 @@ func (client *Client) ListObjects() (Objects, error) {
 		if err != nil {
 			return err
 		}
-		// Skip if walked path is the directory
+		// Skip if walked path is directory
 		if info.IsDir() {
 			return nil
 		}
@@ -42,7 +44,7 @@ func (client *Client) ListObjects() (Objects, error) {
 			m = m[:idx]
 		}
 		// Add items, but we won't calculate checksum at this time.
-		// We should calculate checksum when we need to compare between remote and local for performance.
+		// We should calculate checksum when we need to compare between remote and local.
 		o[strings.TrimPrefix(path, client.root)] = Object{
 			ContentType: m,
 			Size:        info.Size(),

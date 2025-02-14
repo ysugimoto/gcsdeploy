@@ -6,7 +6,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
 	"github.com/ysugimoto/gcsdeploy/operation"
-	"github.com/ysugimoto/gcsdeploy/remote"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -27,11 +26,13 @@ func writeln(c *color.Color, format string, args ...interface{}) {
 	write(c, format+"\n", args...)
 }
 
+// Format int to thousand comma string
 func numberFormat(v int64) string {
 	return message.NewPrinter(language.English).Sprintf("%d", v)
 }
 
-func printDryRunOperations(ops operation.Operations, bucket *remote.Bucket) {
+// Print operation plan (add, update, delete)
+func printDryRunOperations(ops operation.Operations, enableDelete bool) {
 	var add, update, del operation.Operations
 	for i := range ops {
 		switch ops[i].Type {
@@ -49,10 +50,9 @@ func printDryRunOperations(ops operation.Operations, bucket *remote.Bucket) {
 		for _, a := range add {
 			writeln(
 				white,
-				"- %s -> %s/%s (%s %s bytes)",
+				"- %s -> %s (%s %s bytes)",
 				a.Local.FullPath,
-				bucket.String(),
-				a.Remote.Key,
+				a.Remote.URL(),
 				a.Local.ContentType,
 				numberFormat(a.Local.Size),
 			)
@@ -63,23 +63,26 @@ func printDryRunOperations(ops operation.Operations, bucket *remote.Bucket) {
 		for _, u := range update {
 			writeln(
 				white,
-				"- %s -> %s/%s (%s %s bytes)",
+				"- %s -> %s (%s %s bytes)",
 				u.Local.FullPath,
-				bucket.String(),
-				u.Remote.Key,
+				u.Remote.URL(),
 				u.Local.ContentType,
 				numberFormat(u.Local.Size),
 			)
 		}
 	}
 	if len(del) > 0 {
-		writeln(red, "%s", "Delete Files:")
+		str := "Delete Files"
+		if !enableDelete {
+			str += " (will not execute, provide --delete flag if you'd like to be enable)"
+		}
+		str += ":"
+		writeln(red, "%s", str)
 		for _, d := range del {
 			writeln(
 				white,
-				"- %s/%s (%s %s bytes)",
-				bucket.String(),
-				d.Remote.Key,
+				"- %s (%s %s bytes)",
+				d.Remote.URL(),
 				d.Remote.ContentType,
 				numberFormat(d.Remote.Size),
 			)
@@ -87,39 +90,39 @@ func printDryRunOperations(ops operation.Operations, bucket *remote.Bucket) {
 	}
 }
 
-func printAddOperation(op operation.Operation, bucket *remote.Bucket) {
+// Print add operation information
+func printAddOperation(op operation.Operation) {
+	write(green, "%8s: ", "Adding")
 	writeln(
 		white,
-		"%8s: %s -> %s/%s (%s %s bytes)",
-		"Adding",
+		"%s -> %s (%s %s bytes)",
 		op.Local.FullPath,
-		bucket.String(),
-		op.Remote.Key,
+		op.Remote.URL(),
 		op.Local.ContentType,
 		numberFormat(op.Local.Size),
 	)
 }
 
-func printUpdateOperation(op operation.Operation, bucket *remote.Bucket) {
+// Print update operation information
+func printUpdateOperation(op operation.Operation) {
+	write(yellow, "%8s: ", "Updating")
 	writeln(
 		white,
-		"%8s: %s -> %s/%s (%s %s bytes)",
-		"Updating",
+		"%s -> %s (%s %s bytes)",
 		op.Local.FullPath,
-		bucket.String(),
-		op.Remote.Key,
+		op.Remote.URL(),
 		op.Local.ContentType,
 		numberFormat(op.Local.Size),
 	)
 }
 
-func printDeleteOperation(op operation.Operation, bucket *remote.Bucket) {
+// Print delete operation information
+func printDeleteOperation(op operation.Operation) {
+	write(red, "%8s: ", "Deleting")
 	writeln(
 		white,
-		"%8s: %s/%s (%s %s bytes)",
-		"Deleting",
-		bucket.String(),
-		op.Remote.Key,
+		"%s (%s %s bytes)",
+		op.Remote.URL(),
 		op.Remote.ContentType,
 		numberFormat(op.Remote.Size),
 	)

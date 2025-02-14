@@ -6,12 +6,17 @@ import (
 	"os"
 )
 
+type Objects map[string]Object
+
+// Local object declaration.
+// struct should have full path in local machine, mimetype, and its filesize.
 type Object struct {
 	FullPath    string
 	ContentType string
 	Size        int64
 }
 
+// Calculate file checksum - md5 hash
 func (o Object) Checksum() ([]byte, error) {
 	fp, err := os.Open(o.FullPath)
 	if err != nil {
@@ -25,5 +30,3 @@ func (o Object) Checksum() ([]byte, error) {
 	sum := hash.Sum(nil)
 	return sum, nil
 }
-
-type Objects map[string]Object

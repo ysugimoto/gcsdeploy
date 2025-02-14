@@ -160,7 +160,8 @@ func TestMake(t *testing.T) {
 						Size:        464,
 					},
 					Remote: remote.Object{
-						Key: "some.html",
+						Key:    "some.html",
+						Bucket: bucket,
 					},
 				},
 			},
@@ -303,7 +304,7 @@ func TestMake(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ops, err := Make(tt.remote, tt.local)
+			ops, err := Make(bucket, tt.remote, tt.local)
 			if err != nil {
 				t.Errorf("Unexpected error returns: %s", err)
 				return

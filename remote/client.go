@@ -3,49 +3,39 @@ package remote
 import (
 	"context"
 	"io"
-	"mime"
 	"os"
-	"path/filepath"
 
 	"cloud.google.com/go/storage"
+	"github.com/k0kubun/pp"
+	"github.com/ysugimoto/gcsdeploy/local"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
 type Client struct {
-	c      *storage.Client
-	bucket *Bucket
+	c *storage.Client
 }
 
-func New(ctx context.Context, bucket *Bucket) (ClientInterface, error) {
-	client, err := storage.NewClient(ctx)
+// Create Client pointer that implements ClientInterface
+func New(ctx context.Context, opts ...option.ClientOption) (ClientInterface, error) {
+	client, err := storage.NewClient(ctx, opts...)
 	if err != nil {
 		return nil, Error(err, "Failed to create GCS storage client")
 	}
 
 	return &Client{
-		c:      client,
-		bucket: bucket,
+		c: client,
 	}, nil
 }
 
-func NewWithCredential(ctx context.Context, bucket *Bucket, creds string) (ClientInterface, error) {
-	client, err := storage.NewClient(ctx, option.WithCredentialsFile(creds))
-	if err != nil {
-		return nil, Error(err, "Failed to create GCS storage client")
-	}
-
-	return &Client{
-		c:      client,
-		bucket: bucket,
-	}, nil
-}
-
-func (client *Client) ListObjects(ctx context.Context) (Objects, error) {
-	iter := client.c.Bucket(client.bucket.Name).Objects(ctx, &storage.Query{
+// ListObjects lists all objects that exists in GCS bucket recursively
+// We're guessing Objects() method will return all objects in the GCS bucket,
+// but may need to call with next-page token to get all objects recursively.
+func (client *Client) ListObjects(ctx context.Context, bucket *Bucket) (Objects, error) {
+	iter := client.c.Bucket(bucket.Name).Objects(ctx, &storage.Query{
 		Versions:   false,
 		Projection: storage.ProjectionNoACL,
-		Prefix:     client.bucket.Prefix,
+		Prefix:     bucket.Prefix,
 	})
 	o := Objects{}
 
@@ -55,11 +45,12 @@ func (client *Client) ListObjects(ctx context.Context) (Objects, error) {
 			break
 		}
 		if err != nil {
+			pp.Println(err)
 			return nil, Error(err, "Failed to iterate object")
 		}
 		o[v.Name] = Object{
 			Key:         v.Name,
-			Bucket:      client.bucket,
+			Bucket:      bucket,
 			Checksum:    v.MD5,
 			Size:        v.Size,
 			ContentType: v.ContentType,
@@ -69,27 +60,31 @@ func (client *Client) ListObjects(ctx context.Context) (Objects, error) {
 	return o, nil
 }
 
-func (client *Client) UploadObject(ctx context.Context, from, to string) error {
-	fp, err := os.Open(from)
+// UploadObject uploads local file to GCS bucket with specified prefix
+func (client *Client) UploadObject(ctx context.Context, from local.Object, to Object) error {
+	fp, err := os.Open(from.FullPath)
 	if err != nil {
-		return Error(err, "Failed to open file "+from)
+		return Error(err, "Failed to open file "+from.FullPath)
 	}
 	defer fp.Close()
 
-	w := client.c.Bucket(client.bucket.Name).Object(to).NewWriter(ctx)
-	m, err := mime.ExtensionsByType(filepath.Ext(from))
-	if err == nil && m != nil {
-		w.ContentType = m[0]
+	w := client.c.Bucket(to.Bucket.Name).Object(to.Path()).NewWriter(ctx)
+	if from.ContentType != "" {
+		w.ContentType = from.ContentType
 	}
 	if _, err := io.Copy(w, fp); err != nil {
-		return Error(err, "Failed to write remote file "+from)
+		return Error(err, "Failed to write remote file "+to.Path())
+	}
+	if err := w.Close(); err != nil {
+		return Error(err, "Failed to flush writer buffer")
 	}
 	return nil
 }
 
-func (client *Client) DeleteObject(ctx context.Context, from string) error {
-	if err := client.c.Bucket(client.bucket.Name).Object(from).Delete(ctx); err != nil {
-		return Error(err, "Failed to delete object "+from)
+// Delete deletes file in GCS bucket.
+func (client *Client) DeleteObject(ctx context.Context, from Object) error {
+	if err := client.c.Bucket(from.Bucket.Name).Object(from.Path()).Delete(ctx); err != nil {
+		return Error(err, "Failed to delete object "+from.Path())
 	}
 	return nil
 }
