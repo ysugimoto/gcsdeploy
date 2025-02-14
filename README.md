@@ -3,7 +3,7 @@
 Simple CLI tool that manages deployment to the Google Cloud Storage bucket.
 This tool uses MD5 checksum in GCS object, and compare with local file, and update if file has changed.
 
-This tool is heavily inspired in [s3deploy](https://github.com/bep/s3deploy).
+This tool is heavily inspired by [s3deploy](https://github.com/bep/s3deploy).
 
 ## Installation
 
