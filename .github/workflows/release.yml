@@ -30,7 +30,7 @@ jobs:
           VERSION=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       - name: Build platform binaries
-        run: VERSION=${{ steps.version.outputs.version }} make all
+        run: VERSION=${{ steps.version.outputs.version }} make binary
       - name: Create Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
